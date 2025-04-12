@@ -29,9 +29,22 @@
 		29AD64202DAA320100429B24 /* NetMeterUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NetMeterUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		29AD644B2DAB002300429B24 /* Exceptions for "NetMeter" folder in "NetMeter" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 29AD64022DAA31FF00429B24 /* NetMeter */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		29AD64052DAA31FF00429B24 /* NetMeter */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				29AD644B2DAB002300429B24 /* Exceptions for "NetMeter" folder in "NetMeter" target */,
+			);
 			path = NetMeter;
 			sourceTree = "<group>";
 		};
@@ -43,6 +56,11 @@
 		29AD64232DAA320100429B24 /* NetMeterUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = NetMeterUITests;
+			sourceTree = "<group>";
+		};
+		29AD644F2DAB0B6600429B24 /* screenshots */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = screenshots;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +93,7 @@
 		29AD63FA2DAA31FF00429B24 = {
 			isa = PBXGroup;
 			children = (
+				29AD644F2DAB0B6600429B24 /* screenshots */,
 				29AD64052DAA31FF00429B24 /* NetMeter */,
 				29AD64192DAA320100429B24 /* NetMeterTests */,
 				29AD64232DAA320100429B24 /* NetMeterUITests */,
@@ -109,6 +128,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				29AD64052DAA31FF00429B24 /* NetMeter */,
+				29AD644F2DAB0B6600429B24 /* screenshots */,
 			);
 			name = NetMeter;
 			packageProductDependencies = (
@@ -402,12 +422,18 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NetMeter/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Net Meter";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LSUIElement = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
+				NSMainStoryboardFile = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.codekolar.NetMeter;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -429,12 +455,18 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NetMeter/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Net Meter";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LSUIElement = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
+				NSMainStoryboardFile = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.codekolar.NetMeter;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
