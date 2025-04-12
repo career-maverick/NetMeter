@@ -56,7 +56,7 @@ NetMeter combines function and elegance, offering an intuitive user experience f
 
 ### Option 1: Download Release
 
-1. Go to the [Releases](https://github.com/yourusername/netmeter/releases) page
+1. Go to the [Releases](https://github.com/career-maverick/netmeter/releases) page
 2. Download the latest `.dmg` file
 3. Open the DMG and drag NetMeter to your Applications folder
 4. Launch NetMeter from your Applications folder
@@ -115,9 +115,6 @@ Contributions are welcome! If you'd like to contribute:
 
 Please ensure your code follows the project's coding style and includes appropriate tests.
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 💡 Acknowledgments
 
