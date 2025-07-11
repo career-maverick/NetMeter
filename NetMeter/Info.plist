@@ -4,5 +4,19 @@
 <dict>
 	<key>CFBundleGetInfoString</key>
 	<string></string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>CFBundleName</key>
+	<string>NetMeter</string>
+	<key>CFBundleDisplayName</key>
+	<string>NetMeter</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.yourcompany.NetMeter</string>
+	<key>CFBundleVersion</key>
+	<string>1.0</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2025. All rights reserved.</string>
 </dict>
 </plist>

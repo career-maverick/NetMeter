@@ -26,16 +26,26 @@ struct NetMeterApp: App {
 class AppDelegate: NSObject, NSApplicationDelegate {
 	func applicationDidFinishLaunching(_ notification: Notification) {
 		// Make the app a PURE background agent (no dock icon)
+		// This should be redundant with LSUIElement in Info.plist, but ensures it works
 		NSApp.setActivationPolicy(.accessory)
 		
 		// Ensure we're not in the dock
 		if NSApp.activationPolicy() != .accessory {
 			NSApp.setActivationPolicy(.accessory)
 		}
+		
+		// Hide the dock icon completely
+		NSApp.dockTile.contentView = nil
+		NSApp.dockTile.display()
 	}
 	
 	func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
 		// Always allow immediate termination
 		return .terminateNow
+	}
+	
+	func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+		// Don't show any windows when the app is reopened
+		return false
 	}
 }
