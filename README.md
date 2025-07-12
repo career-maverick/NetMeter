@@ -82,8 +82,8 @@ NetMeter follows modern Swift development practices with a clean, testable archi
 ### Option 1: Download Release
 
 1. Go to the [Releases](https://github.com/career-maverick/netmeter/releases) page
-2. Download the latest `.dmg` file
-3. Open the DMG and drag NetMeter to your Applications folder
+2. Download the latest `.zip` file
+3. Open the ZIP and drag NetMeter to your Applications folder
 4. Launch NetMeter from your Applications folder
 
 ### Option 2: Build from Source
@@ -219,8 +219,6 @@ Contributions are welcome! If you'd like to contribute:
 
 Please ensure your code follows the project's coding style and includes appropriate tests.
 
-<<<<<<< HEAD
-=======
 ### Development Guidelines
 
 - Follow Swift style guidelines
@@ -232,7 +230,6 @@ Please ensure your code follows the project's coding style and includes appropri
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
->>>>>>> 825a2d1 (updated code performance and removed obsolete libraries to leverage moder framework)
 
 ## Acknowledgments
 
