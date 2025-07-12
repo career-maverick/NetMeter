@@ -260,5 +260,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
   <p>Made with love for the macOS community</p>
-  <p><strong>Version 1.0</strong> - Production Ready</p>
+  <p><strong>Version 1.1</strong> - Production Ready</p>
 </div>
