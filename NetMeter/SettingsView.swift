@@ -12,51 +12,67 @@ struct SettingsView: View {
     @ObservedObject var networkMonitor: NetworkMonitor
     @ObservedObject var appController: AppController
     @AppStorage("launchAtStartup") private var launchAtStartup = false
-    @AppStorage("refreshInterval") private var refreshInterval = 1.0
+    @AppStorage("refreshInterval") private var refreshInterval = 0.5
     @AppStorage("showFullText") private var showFullText = true
     @AppStorage("theme") private var theme = "System Default"
     @AppStorage("showNotifications") private var showNotifications = true
     @AppStorage("autoRetryOnError") private var autoRetryOnError = true
     
-    let refreshIntervalOptions = [0.5, 1.0, 2.0, 5.0]
+    let refreshIntervalOptions = [0.1, 0.5, 1.0, 2.0, 5.0]
     let themeOptions = ["Light", "Dark", "System Default"]
     
-    @State private var showResetAlert = false
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
     
+    enum PreferencesSection: String, CaseIterable, Identifiable {
+        case general = "General"
+        case display = "Display"
+        case network = "Network"
+        case about = "About"
+        var id: String { rawValue }
+    }
+    @State private var selectedSection: PreferencesSection = .general
+    
     var body: some View {
-        TabView {
-            generalSettingsView
-                .tabItem {
-                    Label("General", systemImage: "gear")
+        VStack(alignment: .leading, spacing: 0) {
+            Picker("", selection: $selectedSection) {
+                ForEach(PreferencesSection.allCases) { section in
+                    Text(section.rawValue).tag(section)
                 }
-            
-            displaySettingsView
-                .tabItem {
-                    Label("Display", systemImage: "display")
-                }
-            
-            networkSettingsView
-                .tabItem {
-                    Label("Network", systemImage: "network")
-                }
-            
-            aboutView
-                .tabItem {
-                    Label("About", systemImage: "info.circle")
-                }
-        }
-        .padding(20)
-        .frame(width: 500, height: 400)
-        .alert("Reset Statistics", isPresented: $showResetAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Reset", role: .destructive) {
-                resetStatistics()
             }
-        } message: {
-            Text("This will permanently delete all network usage statistics. This action cannot be undone.")
+            .pickerStyle(SegmentedPickerStyle())
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+            
+            Divider()
+            
+            Group {
+                switch selectedSection {
+                case .general:
+                    generalSettingsView
+                        .padding(.top, 16)
+                case .display:
+                    displaySettingsView
+                        .padding(.top, 16)
+                case .network:
+                    networkSettingsView
+                        .padding(.top, 16)
+                case .about:
+                    ZStack {
+                        Color.clear // To fill the space
+                        VStack {
+                            aboutView
+                                .frame(maxWidth: 400)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            Spacer(minLength: 0)
         }
+        .frame(width: 500, height: 400)
         .alert("Error", isPresented: $showErrorAlert) {
             Button("OK") { }
         } message: {
@@ -105,7 +121,7 @@ struct SettingsView: View {
             
             Section("Data Management") {
                 Button("Reset Statistics") {
-                    showResetAlert = true
+                    performResetStatistics()
                 }
                 .foregroundColor(.red)
                 
@@ -114,7 +130,7 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
         }
-        .padding()
+        .padding(.top, 8)
     }
     
     private var displaySettingsView: some View {
@@ -344,21 +360,19 @@ struct SettingsView: View {
         return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
     
-    private func resetStatistics() {
+    private func performResetStatistics() {
         networkMonitor.resetStatistics()
-        
+        networkMonitor.appState.resetStatistics()
         // Show success feedback using modern UserNotifications
         let content = UNMutableNotificationContent()
         content.title = "NetMeter"
         content.body = "Statistics have been reset"
         content.sound = .default
-        
         let request = UNNotificationRequest(
             identifier: UUID().uuidString,
             content: content,
             trigger: nil
         )
-        
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Failed to show notification: \(error.localizedDescription)")

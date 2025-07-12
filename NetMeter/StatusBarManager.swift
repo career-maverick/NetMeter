@@ -88,7 +88,7 @@ class StatusBarManager: NSObject {
         popover?.animates = true
         
         // Set content view
-        let statsView = StatsView(networkMonitor: networkMonitor, appController: appController)
+        let statsView = StatsView(networkMonitor: networkMonitor, appController: appController, appState: networkMonitor.appState)
         popover?.contentViewController = NSHostingController(rootView: statsView)
         logger.info("Popover setup completed")
     }

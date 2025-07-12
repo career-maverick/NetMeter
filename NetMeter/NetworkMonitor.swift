@@ -52,6 +52,7 @@ class NetworkMonitor: ObservableObject {
     @Published var networkUptime: TimeInterval = 0
     @Published var networkStatus: NetworkStatus = .disconnected
     @Published var lastError: NetworkMonitorError?
+    @Published var appState = AppState()
     
     // MARK: - Private Properties
     private var previousUploadBytes: UInt64 = 0
@@ -60,6 +61,13 @@ class NetworkMonitor: ObservableObject {
     private var startTime: Date = Date()
     private var refreshTimer: Timer?
     private var refreshInterval: TimeInterval = 1.0
+    private var skipNextDelta: Bool = false
+    private var sampleTimer: Timer?
+    private var uiUpdateTimer: Timer?
+    private let sampleInterval: TimeInterval = 0.1 // 100ms
+    private let uiUpdateInterval: TimeInterval = 0.5 // 500ms
+    private var accumulatedUpload: UInt64 = 0
+    private var accumulatedDownload: UInt64 = 0
     
     // Network monitoring
     private let monitor = NWPathMonitor()
@@ -106,23 +114,30 @@ class NetworkMonitor: ObservableObject {
         previousDownloadBytes = 0
         updateCount = 0
         lastPerformanceCheck = Date()
-        
+        accumulatedUpload = 0
+        accumulatedDownload = 0
         // Clear any previous errors
         DispatchQueue.main.async {
             self.lastError = nil
         }
-        
-        // Start refresh timer
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
-            self?.updateNetworkStats()
+        // Start high-frequency sampling timer
+        sampleTimer?.invalidate()
+        sampleTimer = Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { [weak self] _ in
+            self?.sampleNetworkStats()
         }
-        
-        logger.info("Network monitoring started with interval: \(self.refreshInterval)s")
+        // Start UI update timer
+        uiUpdateTimer?.invalidate()
+        uiUpdateTimer = Timer.scheduledTimer(withTimeInterval: uiUpdateInterval, repeats: true) { [weak self] _ in
+            self?.updatePublishedStats()
+        }
+        logger.info("Network monitoring started with sample interval: \(self.sampleInterval)s, UI update interval: \(self.uiUpdateInterval)s")
     }
     
     func stopMonitoring() {
-        refreshTimer?.invalidate()
-        refreshTimer = nil
+        sampleTimer?.invalidate()
+        sampleTimer = nil
+        uiUpdateTimer?.invalidate()
+        uiUpdateTimer = nil
         logger.info("Network monitoring stopped")
     }
     
@@ -146,10 +161,17 @@ class NetworkMonitor: ObservableObject {
             self.totalDownloadedToday = 0
             self.peakUploadSpeed = 0
             self.peakDownloadSpeed = 0
+            // Set previous byte counters to current interface values
+            if let iface = try? NetworkInterfaceStats.getPrimaryInterface() {
+                self.previousUploadBytes = iface.outputBytes
+                self.previousDownloadBytes = iface.inputBytes
+            } else {
+                self.previousUploadBytes = 0
+                self.previousDownloadBytes = 0
+            }
+            self.skipNextDelta = true
         }
         
-        previousUploadBytes = 0
-        previousDownloadBytes = 0
         startTime = Date()
     }
     
@@ -187,86 +209,53 @@ class NetworkMonitor: ObservableObject {
         }
     }
     
-    private func updateNetworkStats() {
-        // Performance monitoring
-        updateCount += 1
-        if updateCount % 100 == 0 {
-            checkPerformance()
-        }
-        
-        // Skip update if not connected
-        guard case .connected = networkStatus else {
-            DispatchQueue.main.async {
-                self.uploadSpeed = 0
-                self.downloadSpeed = 0
-            }
-            return
-        }
-        
+    private func sampleNetworkStats() {
+        guard case .connected = networkStatus else { return }
         do {
-            let currentTime = Date()
-            let timeInterval = currentTime.timeIntervalSince(lastUpdateTime)
-            
-            guard timeInterval > 0 else {
-                logger.warning("Invalid time interval for speed calculation")
-                return
-            }
-            
-            // Get current interface stats with error handling
-            guard let interface = try NetworkInterfaceStats.getPrimaryInterface() else {
-                throw NetworkMonitorError.interfaceNotFound
-            }
-            
-            // Update interface info
+            let interface = try NetworkInterfaceStats.getPrimaryInterface()
+            guard let interface = interface else { return }
             DispatchQueue.main.async {
-                self.interfaceName = interface.interfaceName
-                self.interfaceDescription = NetworkInterfaceStats.getInterfaceDescription(for: interface.interfaceName)
                 self.ipAddress = interface.ipAddress
-            }
-            
-            // Calculate speeds with overflow protection
-            let (uploadSpeed, downloadSpeed) = calculateSpeeds(
-                currentUpload: interface.outputBytes,
-                currentDownload: interface.inputBytes,
-                timeInterval: timeInterval
-            )
-            
-            // Update published properties on main queue
-            DispatchQueue.main.async {
-                self.uploadSpeed = uploadSpeed
-                self.downloadSpeed = downloadSpeed
-                
-                // Update peak speeds
-                if uploadSpeed > self.peakUploadSpeed {
-                    self.peakUploadSpeed = uploadSpeed
+                if self.skipNextDelta {
+                    self.skipNextDelta = false
+                    self.previousUploadBytes = interface.outputBytes
+                    self.previousDownloadBytes = interface.inputBytes
+                    return
                 }
-                
-                if downloadSpeed > self.peakDownloadSpeed {
-                    self.peakDownloadSpeed = downloadSpeed
-                }
-                
-                // Update totals for today (with overflow protection)
                 let uploadDelta = self.calculateSafeDelta(current: interface.outputBytes, previous: self.previousUploadBytes)
                 let downloadDelta = self.calculateSafeDelta(current: interface.inputBytes, previous: self.previousDownloadBytes)
-                
-                self.totalUploadedToday = self.totalUploadedToday.addingReportingOverflow(uploadDelta).partialValue
-                self.totalDownloadedToday = self.totalDownloadedToday.addingReportingOverflow(downloadDelta).partialValue
-                
-                // Update network uptime
-                self.networkUptime = Date().timeIntervalSince(self.startTime)
+                self.accumulatedUpload += uploadDelta
+                self.accumulatedDownload += downloadDelta
+                self.previousUploadBytes = interface.outputBytes
+                self.previousDownloadBytes = interface.inputBytes
+                // Persist to AppState for daily stats
+                self.appState.addDailyStatistics(for: Date(), uploaded: uploadDelta, downloaded: downloadDelta)
             }
-            
-            // Update previous values for next calculation
-            previousUploadBytes = interface.outputBytes
-            previousDownloadBytes = interface.inputBytes
-            lastUpdateTime = currentTime
-            
         } catch {
-            logger.error("Error updating network stats: \(error.localizedDescription)")
+            logger.error("Error sampling network stats: \(error.localizedDescription)")
             DispatchQueue.main.async {
                 self.lastError = error as? NetworkMonitorError
                 self.networkStatus = .error(error as? NetworkMonitorError ?? .invalidInterfaceData)
             }
+        }
+    }
+    
+    private func updatePublishedStats() {
+        DispatchQueue.main.async {
+            self.totalUploadedToday += self.accumulatedUpload
+            self.totalDownloadedToday += self.accumulatedDownload
+            // Calculate speeds for display (over the UI update interval)
+            self.uploadSpeed = Double(self.accumulatedUpload) / self.uiUpdateInterval
+            self.downloadSpeed = Double(self.accumulatedDownload) / self.uiUpdateInterval
+            if self.uploadSpeed > self.peakUploadSpeed {
+                self.peakUploadSpeed = self.uploadSpeed
+            }
+            if self.downloadSpeed > self.peakDownloadSpeed {
+                self.peakDownloadSpeed = self.downloadSpeed
+            }
+            self.accumulatedUpload = 0
+            self.accumulatedDownload = 0
+            self.networkUptime = Date().timeIntervalSince(self.startTime)
         }
     }
     

@@ -147,8 +147,10 @@ class AppState: ObservableObject {
     }
     
     func resetStatistics() {
-        dailyStatistics = [:]
-        saveStatistics()
+        DispatchQueue.main.async {
+            self.dailyStatistics = [:]
+            self.saveStatistics()
+        }
     }
 }
 

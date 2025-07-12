@@ -126,6 +126,22 @@ class NetworkMonitorTests: XCTestCase {
         XCTAssertEqual(networkMonitor.peakDownloadSpeed, 0)
     }
     
+    func testDailyStatsUpdateAndPersistence() throws {
+        let appState = networkMonitor.appState
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        // Simulate network usage
+        appState.resetStatistics()
+        appState.addDailyStatistics(for: today, uploaded: 12345, downloaded: 67890)
+        
+        // Reload stats from disk
+        let newAppState = AppState()
+        let stats = newAppState.getStatsForToday()
+        
+        XCTAssertEqual(stats.totalUploaded, 12345)
+        XCTAssertEqual(stats.totalDownloaded, 67890)
+    }
+    
     // MARK: - Performance Tests
     
     func testFormatPerformance() throws {

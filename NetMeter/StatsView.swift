@@ -10,7 +10,7 @@ import SwiftUI
 struct StatsView: View {
     @ObservedObject var networkMonitor: NetworkMonitor
     @ObservedObject var appController: AppController
-    @State private var appState = AppState()
+    @ObservedObject var appState: AppState
     @State private var showWeeklyStats = false
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
@@ -90,6 +90,15 @@ struct StatsView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .help("Open Settings")
+                
+                Button(action: {
+                    appController.quitApplication()
+                }) {
+                    Image(systemName: "power")
+                        .foregroundColor(.primary)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help("Quit NetMeter")
             }
         }
     }
@@ -181,7 +190,8 @@ struct StatsView: View {
     }
     
     private var dataUsageSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let todayStats = appState.getStatsForToday()
+        return VStack(alignment: .leading, spacing: 8) {
             Text("Data Usage Today")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
@@ -192,7 +202,7 @@ struct StatsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Text(networkMonitor.formatBytes(Double(networkMonitor.totalUploadedToday)))
+                    Text(networkMonitor.formatBytes(Double(todayStats.totalUploaded)))
                         .foregroundColor(.primary)
                         .font(.system(.body, design: .monospaced))
                 }
@@ -202,7 +212,7 @@ struct StatsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Text(networkMonitor.formatBytes(Double(networkMonitor.totalDownloadedToday)))
+                    Text(networkMonitor.formatBytes(Double(todayStats.totalDownloaded)))
                         .foregroundColor(.primary)
                         .font(.system(.body, design: .monospaced))
                 }
@@ -364,9 +374,11 @@ struct VisualEffectView: NSViewRepresentable {
 // MARK: - Preview
 struct StatsView_Previews: PreviewProvider {
     static var previews: some View {
+        let monitor = NetworkMonitor()
         StatsView(
-            networkMonitor: NetworkMonitor(),
-            appController: AppController()
+            networkMonitor: monitor,
+            appController: AppController(),
+            appState: monitor.appState
         )
     }
 }

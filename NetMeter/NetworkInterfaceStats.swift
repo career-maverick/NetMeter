@@ -84,6 +84,9 @@ class NetworkInterfaceStats {
     private static var lastCacheUpdate: Date = Date.distantPast
     private static let cacheValidityDuration: TimeInterval = 5.0 // 5 seconds
     
+    private static var lastInterfaceCount: Int? = nil
+    private static var lastPrimaryInterfaceName: String? = nil
+    
     static func getAllInterfaces() throws -> [InterfaceStats] {
         var interfaces: [InterfaceStats] = []
         var ifaddr: UnsafeMutablePointer<ifaddrs>?
@@ -128,7 +131,11 @@ class NetworkInterfaceStats {
             }
         }
         
-        logger.debug("Found \(interfaces.count) network interfaces")
+        let count = interfaces.count
+        if lastInterfaceCount != count {
+            logger.debug("Found \(count) network interfaces")
+            lastInterfaceCount = count
+        }
         return interfaces
     }
     
@@ -189,10 +196,8 @@ class NetworkInterfaceStats {
         if Date().timeIntervalSince(lastCacheUpdate) < cacheValidityDuration {
             return activeInterfacesCache.first
         }
-        
         // Get all interfaces
         let allInterfaces = try getAllInterfaces()
-        
         // Filter out loopback and non-physical interfaces
         let physicalInterfaces = allInterfaces.filter { interface in
             !interface.interfaceName.hasPrefix("lo") &&
@@ -200,35 +205,20 @@ class NetworkInterfaceStats {
             !interface.interfaceName.hasPrefix("awdl") &&
             !interface.interfaceName.hasPrefix("bridge")
         }
-        
-        // Try to find active interfaces with a valid IP
-        let activeInterfaces = physicalInterfaces.filter { $0.isActive }
-        
-        // Prioritize interfaces by type and name
-        let sortedInterfaces = activeInterfaces.sorted { first, second in
-            // Priority order: Wi-Fi > Ethernet > Thunderbolt > USB > Others
-            let firstPriority = getInterfacePriority(first.interfaceType)
-            let secondPriority = getInterfacePriority(second.interfaceType)
-            
-            if firstPriority != secondPriority {
-                return firstPriority > secondPriority
-            }
-            
-            // If same priority, prefer lower interface numbers
-            return first.interfaceName < second.interfaceName
-        }
-        
+        // Pick the interface with the highest traffic
+        let primaryInterface = physicalInterfaces.max(by: { ($0.inputBytes + $0.outputBytes) < ($1.inputBytes + $1.outputBytes) })
         // Update cache
-        activeInterfacesCache = sortedInterfaces
+        activeInterfacesCache = primaryInterface.map { [$0] } ?? []
         lastCacheUpdate = Date()
-        
-        guard let primaryInterface = sortedInterfaces.first else {
+        guard let selected = primaryInterface else {
             logger.warning("No active network interfaces found")
             throw InterfaceStatsError.noActiveInterfaces
         }
-        
-        logger.info("Selected primary interface: \(primaryInterface.interfaceName) (\(primaryInterface.interfaceType.rawValue))")
-        return primaryInterface
+        if lastPrimaryInterfaceName != selected.interfaceName {
+            logger.info("Selected primary interface: \(selected.interfaceName) (\(selected.interfaceType.rawValue))")
+            lastPrimaryInterfaceName = selected.interfaceName
+        }
+        return selected
     }
     
     private static func getInterfacePriority(_ type: InterfaceStats.InterfaceType) -> Int {
